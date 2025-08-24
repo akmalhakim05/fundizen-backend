@@ -1,5 +1,8 @@
 package com.fundizen.fundizen_backend.controller;
 
+import com.fundizen.fundizen_backend.service.AuthService;
+import com.google.firebase.auth.FirebaseAuthException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -7,9 +10,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.fundizen.fundizen_backend.service.AuthService;
-import com.google.firebase.auth.FirebaseAuthException;
 
 // Defines HTTP endpoints
 @RestController
@@ -31,7 +31,7 @@ public class AuthController {
             String result = authService.registerWithFirebase(token);
             return ResponseEntity.ok(result);
         } catch (FirebaseAuthException e) {
-            return ResponseEntity.status(401).body("❌ Invalid Firebase token.");
+            return ResponseEntity.status(401).body("Invalid Firebase token.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal server error.");
         }
@@ -48,7 +48,7 @@ public class AuthController {
             String result = authService.loginWithFirebase(token);
             return ResponseEntity.ok(result);
         } catch (FirebaseAuthException e) {
-            return ResponseEntity.status(401).body("❌ Invalid Firebase token.");
+            return ResponseEntity.status(401).body("Invalid Firebase token.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal server error.");
         }

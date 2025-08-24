@@ -1,12 +1,11 @@
 package com.fundizen.fundizen_backend.service;
 
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fundizen.fundizen_backend.models.User;
 import com.fundizen.fundizen_backend.repository.UserRepository;
+
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -19,7 +18,7 @@ public class AuthService {
 
     // Registers a user with Firebase using the provided token.
     public String registerWithFirebase(String token) throws FirebaseAuthException {
-        // Verify the Firebase ID token (https://firebase.google.com/docs/auth/admin/verify-id-tokens#java)
+        // Verify the Firebase ID token
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
 
         if (!decodedToken.isEmailVerified()) {
@@ -29,6 +28,7 @@ public class AuthService {
         String email = decodedToken.getEmail();
         String uid = decodedToken.getUid();
 
+        // 2. Check if user already exists in MongoDB
         if (userRepository.findByEmail(email).isPresent()) {
             return "User already exists";
         }
@@ -50,9 +50,9 @@ public class AuthService {
         Optional<User> existing = userRepository.findByEmail(email);
 
         if (existing.isPresent()) {
-            return "✅ Login successful: " + email;
+            return "Login successful: " + email;
         } else {
-            return "❌ User not registered";
+            return "User not registered";
         }
     }
 }

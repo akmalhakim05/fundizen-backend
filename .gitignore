@@ -34,3 +34,4 @@ build/
 
 ###KEY###
 .src/main/resources/serviceAccountKey.json
+.src/main/resources/application.properties
