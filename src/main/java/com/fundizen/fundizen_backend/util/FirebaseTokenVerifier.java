@@ -1,4 +1,4 @@
-package com.fundizen.util;
+package com.fundizen.fundizen_backend.util;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
