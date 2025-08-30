@@ -55,6 +55,8 @@ public class SecurityConfig {
      "http://localhost:3000", 
         "https://your-frontend-domain.com"
         ));
+        configuration.setAllowedHeaders(Arrays.asList("*")); // Add this line
+        configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
