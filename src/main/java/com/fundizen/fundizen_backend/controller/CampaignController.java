@@ -4,12 +4,17 @@ import com.fundizen.fundizen_backend.models.Campaign;
 import com.fundizen.fundizen_backend.models.User;
 import com.fundizen.fundizen_backend.service.CampaignService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/campaigns")
@@ -21,8 +26,16 @@ public class CampaignController {
 
     // Create a new campaign (requires verified user)
     @PostMapping("/create")
-    public ResponseEntity<?> createCampaign(@RequestBody Campaign campaign) {
+    public ResponseEntity<?> createCampaign(@Valid @RequestBody Campaign campaign, BindingResult result) {
         try {
+            // Check for validation errors
+            if (result.hasErrors()) {
+                List<String> errors = result.getFieldErrors().stream()
+                        .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                        .collect(Collectors.toList());
+                return ResponseEntity.status(400).body(Map.of("errors", errors));
+            }
+        
             // Get authenticated user from security context
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             

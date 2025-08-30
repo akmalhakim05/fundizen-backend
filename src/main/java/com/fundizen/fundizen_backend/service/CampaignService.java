@@ -6,6 +6,7 @@ import com.fundizen.fundizen_backend.repository.CampaignRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -15,14 +16,20 @@ public class CampaignService {
     private CampaignRepository campaignRepository;
 
     public Campaign createCampaign(Campaign campaign) {
-        // Default to unverified
-        campaign.setVerified(false);
+        // Use business logic methods instead of direct field access
         campaign.setStatus("pending");
+        campaign.setVerified(false);
+        campaign.setRaisedAmount(0.0);
         return campaignRepository.save(campaign);
     }
 
     public List<Campaign> getPublicCampaigns() {
         return campaignRepository.findByVerifiedTrue();
+    }
+
+    public List<Campaign> getActiveCampaigns() {
+        return campaignRepository.findByVerifiedTrueAndStatusAndEndDateAfter(
+            "approved", LocalDate.now());
     }
 
     public List<Campaign> getPendingCampaigns() {
@@ -33,8 +40,8 @@ public class CampaignService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        campaign.setVerified(true);
-        campaign.setStatus("approved");
+        // Use business logic method
+        campaign.approve();
         return campaignRepository.save(campaign);
     }
 
@@ -42,8 +49,16 @@ public class CampaignService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        campaign.setVerified(false);
-        campaign.setStatus("rejected");
+        // Use business logic method
+        campaign.reject();
         return campaignRepository.save(campaign);
+    }
+
+    public List<Campaign> getCampaignsByCategory(String category) {
+        return campaignRepository.findByCategoryAndVerifiedTrue(category);
+    }
+
+    public List<Campaign> getExpiredCampaigns() {
+        return campaignRepository.findByEndDateBefore(LocalDate.now());
     }
 }
