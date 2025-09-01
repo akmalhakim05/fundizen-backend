@@ -28,18 +28,18 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/campaigns/public").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                
-                // Protected endpoints - require authentication
-                .requestMatchers("/api/campaigns/create").authenticated()
-                .requestMatchers("/api/campaigns/pending").authenticated()
-                .requestMatchers("/api/campaigns/verify/**").authenticated()
-                .requestMatchers("/api/campaigns/reject/**").authenticated()
-                
-                .anyRequest().authenticated()
+            // Public endpoints
+            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers("/campaigns/public").permitAll()
+            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+            
+            // Protected endpoints
+            .requestMatchers("/campaigns/create").authenticated()
+            .requestMatchers("/campaigns/pending").authenticated()
+            .requestMatchers("/campaigns/verify/**").authenticated()
+            .requestMatchers("/campaigns/reject/**").authenticated()
+            
+            .anyRequest().authenticated()
             )
             .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -48,20 +48,18 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedOrigins(Arrays.asList(
-     "http://localhost:3000", 
-        "https://your-frontend-domain.com"
-        ));
-        configuration.setAllowedHeaders(Arrays.asList("*")); // Add this line
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(Arrays.asList(
+        "http://localhost:3000", 
+        "https://fundizen.my"
+    ));
+    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(Arrays.asList("*"));
+    configuration.setAllowCredentials(true);
 
-    }
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}
 } 
     

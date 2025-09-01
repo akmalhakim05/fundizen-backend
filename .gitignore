@@ -35,3 +35,6 @@ build/
 ###KEY###
 src/main/resources/application.properties
 src/main/resources/serviceAccountKey.json
+
+# environment variables
+.env
