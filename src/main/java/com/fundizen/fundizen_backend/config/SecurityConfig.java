@@ -28,16 +28,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-            // Public endpoints
-            .requestMatchers("/auth/**").permitAll()
-            .requestMatchers("/campaigns/public").permitAll()
-            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-            
-            // Protected endpoints
-            .requestMatchers("/campaigns/create").authenticated()
-            .requestMatchers("/campaigns/pending").authenticated()
-            .requestMatchers("/campaigns/verify/**").authenticated()
-            .requestMatchers("/campaigns/reject/**").authenticated()
+                // Public endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/campaigns/public").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                
+                // Protected endpoints
+                .requestMatchers("/api/campaigns/create").authenticated()
+                .requestMatchers("/api/campaigns/pending").authenticated()
+                .requestMatchers("/api/campaigns/verify/**").authenticated()
+                .requestMatchers("/api/campaigns/reject/**").authenticated()
             
             .anyRequest().authenticated()
             )

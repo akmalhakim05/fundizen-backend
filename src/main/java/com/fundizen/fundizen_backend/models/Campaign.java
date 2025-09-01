@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -12,6 +13,8 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
 @Document(collection = "campaigns")
+@CompoundIndex(name = "status_verified_idx", def = "{'status': 1, 'verified': 1}")
+@CompoundIndex(name = "category_verified_idx", def = "{'category': 1, 'verified': 1}")
 public class Campaign {
 
     @Id
@@ -271,6 +274,19 @@ public class Campaign {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @Indexed
+    private boolean deleted = false;
+    
+    private LocalDateTime deletedAt;
+    
+    private String rejectionReason;
+    
+    // Soft delete method
+    public void softDelete() {
+        this.deleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 
     @Override
