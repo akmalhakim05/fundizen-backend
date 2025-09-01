@@ -20,8 +20,7 @@ public class Campaign {
     @Id
     private String id;
 
-    @NotNull(message = "Creator ID is required")
-    @Indexed // For efficient queries
+    @Indexed // For efficient queries - now optional since no user validation
     private String creatorId;
 
     @NotNull(message = "Campaign name is required")
@@ -55,7 +54,6 @@ public class Campaign {
     private Double raisedAmount = 0.0;
 
     @NotNull(message = "Start date is required")
-    @Future(message = "Start date must be in the future")
     private LocalDate startDate;
 
     @NotNull(message = "End date is required")
@@ -287,6 +285,30 @@ public class Campaign {
     public void softDelete() {
         this.deleted = true;
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     @Override

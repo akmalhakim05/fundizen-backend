@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CampaignService {
@@ -16,11 +17,14 @@ public class CampaignService {
     private CampaignRepository campaignRepository;
 
     public Campaign createCampaign(Campaign campaign) {
-        // Use business logic methods instead of direct field access
         campaign.setStatus("pending");
         campaign.setVerified(false);
         campaign.setRaisedAmount(0.0);
         return campaignRepository.save(campaign);
+    }
+
+    public List<Campaign> getAllCampaigns() {
+        return campaignRepository.findAll();
     }
 
     public List<Campaign> getPublicCampaigns() {
@@ -33,14 +37,18 @@ public class CampaignService {
     }
 
     public List<Campaign> getPendingCampaigns() {
-        return campaignRepository.findByVerifiedFalse();
+        return campaignRepository.findByStatusOrderByCreatedAtDesc("pending");
+    }
+
+    public Campaign getCampaignById(String id) {
+        Optional<Campaign> campaign = campaignRepository.findById(id);
+        return campaign.orElse(null);
     }
 
     public Campaign verifyCampaign(String campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        // Use business logic method
         campaign.approve();
         return campaignRepository.save(campaign);
     }
@@ -49,7 +57,6 @@ public class CampaignService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        // Use business logic method
         campaign.reject();
         return campaignRepository.save(campaign);
     }
@@ -60,5 +67,34 @@ public class CampaignService {
 
     public List<Campaign> getExpiredCampaigns() {
         return campaignRepository.findByEndDateBefore(LocalDate.now());
+    }
+
+    public Campaign updateCampaign(String id, Campaign updatedCampaign) {
+        Optional<Campaign> existingCampaign = campaignRepository.findById(id);
+        if (existingCampaign.isPresent()) {
+            Campaign campaign = existingCampaign.get();
+            
+            // Update fields
+            campaign.setName(updatedCampaign.getName());
+            campaign.setCategory(updatedCampaign.getCategory());
+            campaign.setDescription(updatedCampaign.getDescription());
+            campaign.setImageUrl(updatedCampaign.getImageUrl());
+            campaign.setGoalAmount(updatedCampaign.getGoalAmount());
+            campaign.setStartDate(updatedCampaign.getStartDate());
+            campaign.setEndDate(updatedCampaign.getEndDate());
+            campaign.setDocumentUrl(updatedCampaign.getDocumentUrl());
+            
+            return campaignRepository.save(campaign);
+        }
+        return null;
+    }
+
+    public boolean deleteCampaign(String id) {
+        Optional<Campaign> campaign = campaignRepository.findById(id);
+        if (campaign.isPresent()) {
+            campaignRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }
