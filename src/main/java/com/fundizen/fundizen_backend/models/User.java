@@ -15,6 +15,10 @@ public class User {
     @Id
     private String id;
 
+    // Firebase UID - unique identifier from Firebase Auth (nullable for local users)
+    @Indexed(unique = true, sparse = true) // sparse=true allows multiple null values
+    private String uid;
+
     @NotNull(message = "Username is required")
     @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
     @Pattern(regexp = "^\\w+$", message = "Username can only contain letters, numbers, and underscores")
@@ -27,13 +31,16 @@ public class User {
     @Indexed(unique = true) // Ensure unique emails
     private String email;
 
-    @NotNull(message = "Password is required")
+    // Keep password for backward compatibility or local fallback
     @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     private String password;
 
     @Pattern(regexp = "^(user|admin)$", 
              message = "Role must be one of: user, admin")
     private String role = "user";
+
+    // Firebase specific fields
+    private boolean verified = false;
 
     @CreatedDate
     private LocalDateTime createdAt;
@@ -51,9 +58,35 @@ public class User {
         this.role = "user";
     }
 
+    // Firebase constructor
+    public User(String uid, String email, String username, boolean fromFirebase) {
+        this.uid = uid;
+        this.email = email;
+        this.username = username;
+        this.role = "user";
+        this.verified = false;
+    }
+
+    // Full constructor
+    public User(String id, String uid, LocalDateTime createdAt, LocalDateTime updatedAt,
+                String email, String username, String role, boolean verified) {
+        this.id = id;
+        this.uid = uid;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.email = email;
+        this.username = username;
+        this.role = role;
+        this.verified = verified;
+    }
+
     // Helper methods
     public boolean isAdmin() {
         return "admin".equals(role);
+    }
+
+    public boolean isFirebaseUser() {
+        return uid != null && !uid.isEmpty();
     }
 
     // Business logic methods
@@ -72,6 +105,14 @@ public class User {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 
     public String getUsername() {
@@ -106,6 +147,14 @@ public class User {
         this.role = role;
     }
 
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -128,22 +177,25 @@ public class User {
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
         return Objects.equals(id, user.id) &&
+                Objects.equals(uid, user.uid) &&
                 Objects.equals(username, user.username) &&
                 Objects.equals(email, user.email);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, username, email);
+        return Objects.hash(id, uid, username, email);
     }
 
     @Override
     public String toString() {
         return "User{" +
                 "id='" + id + '\'' +
+                ", uid='" + uid + '\'' +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", role='" + role + '\'' +
+                ", verified=" + verified +
                 ", createdAt=" + createdAt +
                 '}';
     }
