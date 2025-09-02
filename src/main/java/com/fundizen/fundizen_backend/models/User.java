@@ -15,8 +15,6 @@ public class User {
     @Id
     private String id;
 
-    private String uid;
-
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -35,18 +33,16 @@ public class User {
     // Constructors
     public User() {}
 
-    public User(String uid, String email, String username) {
-        this.uid = uid;
+    public User(String email, String username) {
         this.email = email;
         this.username = username;
         this.role = "user";
         this.verified = false;
     }
 
-    public User(String id, String uid, LocalDateTime createdAt, LocalDateTime updatedAt, 
+    public User(String id, LocalDateTime createdAt, LocalDateTime updatedAt, 
                 String email, String username, String role, boolean verified) {
         this.id = id;
-        this.uid = uid;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.email = email;
@@ -62,7 +58,6 @@ public class User {
 
     public static class UserBuilder {
         private String id;
-        private String uid;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private String email;
@@ -72,11 +67,6 @@ public class User {
 
         public UserBuilder id(String id) {
             this.id = id;
-            return this;
-        }
-
-        public UserBuilder uid(String uid) {
-            this.uid = uid;
             return this;
         }
 
@@ -111,7 +101,7 @@ public class User {
         }
 
         public User build() {
-            return new User(id, uid, createdAt, updatedAt, email, username, role, verified);
+            return new User(id, createdAt, updatedAt, email, username, role, verified);
         }
     }
 
@@ -122,14 +112,6 @@ public class User {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -187,7 +169,6 @@ public class User {
         User user = (User) o;
         return verified == user.verified &&
                 Objects.equals(id, user.id) &&
-                Objects.equals(uid, user.uid) &&
                 Objects.equals(email, user.email) &&
                 Objects.equals(username, user.username) &&
                 Objects.equals(role, user.role);
@@ -195,14 +176,13 @@ public class User {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uid, email, username, role, verified);
+        return Objects.hash(id, email, username, role, verified);
     }
 
     @Override
     public String toString() {
         return "User{" +
                 "id='" + id + '\'' +
-                ", uid='" + uid + '\'' +
                 ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 ", role='" + role + '\'' +

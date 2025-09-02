@@ -1,5 +1,6 @@
 package com.fundizen.fundizen_backend.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +15,6 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public User findByUid(String uid) {
-        Optional<User> user = userRepository.findByUid(uid);
-        return user.orElse(null);
-    }
-
     public User findByEmail(String email) {
         Optional<User> user = userRepository.findByEmail(email);
         return user.orElse(null);
@@ -28,8 +24,16 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public boolean isUserVerified(String uid) {
-        User user = findByUid(uid);
-        return user != null && user.isVerified();
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+
+    public boolean deleteById(String id) {
+        try {
+            userRepository.deleteById(id);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

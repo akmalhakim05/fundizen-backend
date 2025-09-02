@@ -1,15 +1,12 @@
 package com.fundizen.fundizen_backend.controller;
 
 import com.fundizen.fundizen_backend.models.Campaign;
-import com.fundizen.fundizen_backend.models.User;
 import com.fundizen.fundizen_backend.service.CampaignService;
 
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -24,7 +21,7 @@ public class CampaignController {
     @Autowired
     private CampaignService campaignService;
 
-    // Create a new campaign (requires verified user)
+    // Create a new campaign (no authentication required for now)
     @PostMapping("/create")
     public ResponseEntity<?> createCampaign(@Valid @RequestBody Campaign campaign, BindingResult result) {
         try {
@@ -35,23 +32,11 @@ public class CampaignController {
                         .collect(Collectors.toList());
                 return ResponseEntity.status(400).body(Map.of("errors", errors));
             }
-        
-            // Get authenticated user from security context
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             
-            if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-                return ResponseEntity.status(401).body("Authentication required");
+            // Set a default creator ID since we don't have authentication
+            if (campaign.getCreatorId() == null || campaign.getCreatorId().isEmpty()) {
+                campaign.setCreatorId("default-user");
             }
-            
-            User currentUser = (User) authentication.getPrincipal();
-            
-            // Check if user is verified
-            if (!currentUser.isVerified()) {
-                return ResponseEntity.status(403).body("Only verified users can create campaigns");
-            }
-            
-            // Set the creator ID to current user's ID
-            campaign.setCreatorId(currentUser.getId());
             
             Campaign createdCampaign = campaignService.createCampaign(campaign);
             return ResponseEntity.ok(createdCampaign);
@@ -61,7 +46,7 @@ public class CampaignController {
         }
     }
 
-    // Get all public campaigns (no authentication required)
+    // Get all public campaigns
     @GetMapping("/public")
     public ResponseEntity<List<Campaign>> getPublicCampaigns() {
         try {
@@ -72,52 +57,23 @@ public class CampaignController {
         }
     }
 
-    // Get all pending campaigns (admin only)
+    // Get all pending campaigns (no authentication required for now)
     @GetMapping("/pending")
     public ResponseEntity<?> getPendingCampaigns() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-                return ResponseEntity.status(401).body("Authentication required");
-            }
-            
-            User currentUser = (User) authentication.getPrincipal();
-            
-            // Check if user is admin
-            if (!"admin".equals(currentUser.getRole())) {
-                return ResponseEntity.status(403).body("Admin access required");
-            }
-            
             List<Campaign> campaigns = campaignService.getPendingCampaigns();
             return ResponseEntity.ok(campaigns);
-            
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error fetching pending campaigns: " + e.getMessage());
         }
     }
 
-
-    // Verify a campaign (admin only)
+    // Verify a campaign (no authentication required for now)
     @PostMapping("/verify/{id}")
     public ResponseEntity<?> verifyCampaign(@PathVariable String id) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-                return ResponseEntity.status(401).body("Authentication required");
-            }
-            
-            User currentUser = (User) authentication.getPrincipal();
-            
-            // Check if user is admin
-            if (!"admin".equals(currentUser.getRole())) {
-                return ResponseEntity.status(403).body("Admin access required");
-            }
-            
             Campaign campaign = campaignService.verifyCampaign(id);
             return ResponseEntity.ok(campaign);
-            
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body("Campaign not found");
         } catch (Exception e) {
@@ -125,26 +81,12 @@ public class CampaignController {
         }
     }
 
-    // Reject a campaign (admin only)
+    // Reject a campaign (no authentication required for now)
     @PostMapping("/reject/{id}")
     public ResponseEntity<?> rejectCampaign(@PathVariable String id) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-                return ResponseEntity.status(401).body("Authentication required");
-            }
-            
-            User currentUser = (User) authentication.getPrincipal();
-            
-            // Check if user is admin
-            if (!"admin".equals(currentUser.getRole())) {
-                return ResponseEntity.status(403).body("Admin access required");
-            }
-            
             Campaign campaign = campaignService.rejectCampaign(id);
             return ResponseEntity.ok(campaign);
-            
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body("Campaign not found");
         } catch (Exception e) {
