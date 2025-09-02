@@ -58,6 +58,54 @@ public class UserService {
         throw new RuntimeException("Invalid credentials");
     }
 
+    /**
+     * Create user from Firebase authentication (no password validation needed)
+     */
+    public User createUserFromFirebase(User user, String firebaseUid) {
+        // Check if username already exists
+        if (userRepository.existsByUsername(user.getUsername())) {
+            throw new RuntimeException("Username already exists: " + user.getUsername());
+        }
+        
+        // Check if email already exists
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already exists: " + user.getEmail());
+        }
+        
+        // Set default role
+        user.setRole("user");
+        
+        // No password hashing needed for Firebase users
+        user.setPassword(""); 
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Link existing user account with Firebase UID
+     */
+    public User linkFirebaseAccount(String userId, String firebaseUid) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // You might want to add a firebaseUid field to User model
+            // user.setFirebaseUid(firebaseUid);
+            return userRepository.save(user);
+        }
+        
+        throw new RuntimeException("User not found");
+    }
+
+    /**
+     * Get user by Firebase UID (if you add firebaseUid field to User model)
+     */
+    public User getUserByFirebaseUid(String firebaseUid) {
+        // Add this method to repository: Optional<User> findByFirebaseUid(String firebaseUid);
+        // return userRepository.findByFirebaseUid(firebaseUid).orElse(null);
+        return null; // Placeholder - implement if you add firebaseUid field
+    }
+
     // CRUD operations
     public List<User> getAllUsers() {
         return userRepository.findAll();
