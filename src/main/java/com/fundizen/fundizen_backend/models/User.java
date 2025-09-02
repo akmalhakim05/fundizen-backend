@@ -31,20 +31,6 @@ public class User {
     @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     private String password;
 
-    @Size(max = 50, message = "First name must not exceed 50 characters")
-    private String firstName;
-
-    @Size(max = 50, message = "Last name must not exceed 50 characters")
-    private String lastName;
-
-    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Please provide a valid phone number")
-    private String phoneNumber;
-
-    @Pattern(regexp = "^(active|inactive|suspended)$", 
-             message = "Status must be one of: active, inactive, suspended")
-    @Indexed
-    private String status = "active";
-
     @Pattern(regexp = "^(user|admin)$", 
              message = "Role must be one of: user, admin")
     private String role = "user";
@@ -55,13 +41,6 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    private LocalDateTime lastLoginAt;
-
-    @Indexed
-    private boolean deleted = false;
-    
-    private LocalDateTime deletedAt;
-
     // Constructors
     public User() {}
 
@@ -69,66 +48,21 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.status = "active";
         this.role = "user";
     }
 
-    public User(String username, String email, String password, String firstName, String lastName) {
-        this(username, email, password);
-        this.firstName = firstName;
-        this.lastName = lastName;
-    }
-
     // Helper methods
-    public String getFullName() {
-        if (firstName != null && lastName != null) {
-            return firstName + " " + lastName;
-        } else if (firstName != null) {
-            return firstName;
-        } else if (lastName != null) {
-            return lastName;
-        }
-        return username; // Fallback to username
-    }
-
-    public boolean isActive() {
-        return "active".equals(status) && !deleted;
-    }
-
     public boolean isAdmin() {
         return "admin".equals(role);
     }
 
     // Business logic methods
-    public void activate() {
-        this.status = "active";
-    }
-
-    public void deactivate() {
-        this.status = "inactive";
-    }
-
-    public void suspend() {
-        this.status = "suspended";
-    }
-
     public void promoteToAdmin() {
         this.role = "admin";
     }
 
     public void demoteToUser() {
         this.role = "user";
-    }
-
-    public void updateLastLogin() {
-        this.lastLoginAt = LocalDateTime.now();
-    }
-
-    // Soft delete method
-    public void softDelete() {
-        this.deleted = true;
-        this.deletedAt = LocalDateTime.now();
-        this.status = "inactive";
     }
 
     // Getters and Setters
@@ -164,38 +98,6 @@ public class User {
         this.password = password;
     }
 
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public String getRole() {
         return role;
     }
@@ -220,30 +122,6 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
-    public LocalDateTime getLastLoginAt() {
-        return lastLoginAt;
-    }
-
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
-        this.lastLoginAt = lastLoginAt;
-    }
-
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -265,8 +143,6 @@ public class User {
                 "id='" + id + '\'' +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", fullName='" + getFullName() + '\'' +
-                ", status='" + status + '\'' +
                 ", role='" + role + '\'' +
                 ", createdAt=" + createdAt +
                 '}';

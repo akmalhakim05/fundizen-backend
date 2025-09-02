@@ -28,43 +28,22 @@ public interface UserRepository extends MongoRepository<User, String> {
     @Query("{ $or: [ { 'username': ?0 }, { 'email': ?0 } ] }")
     Optional<User> findByUsernameOrEmail(String usernameOrEmail);
     
-    // Status-based queries
-    List<User> findByStatus(String status);
-    List<User> findByStatusAndDeletedFalse(String status);
-    
     // Role-based queries
     List<User> findByRole(String role);
-    List<User> findByRoleAndDeletedFalse(String role);
-    
-    // Find all non-deleted users
-    List<User> findByDeletedFalse();
-    
-    // Active users (not deleted and active status)
-    @Query("{ 'deleted': false, 'status': 'active' }")
-    List<User> findActiveUsers();
     
     // Pagination support
-    Page<User> findByDeletedFalse(Pageable pageable);
-    Page<User> findByStatusAndDeletedFalse(String status, Pageable pageable);
-    Page<User> findByRoleAndDeletedFalse(String role, Pageable pageable);
+    Page<User> findAll(Pageable pageable);
+    Page<User> findByRole(String role, Pageable pageable);
     
     // Search users by username or email containing text (case-insensitive)
-    @Query("{ 'deleted': false, $or: [ " +
+    @Query("{ $or: [ " +
            "{ 'username': { $regex: ?0, $options: 'i' } }, " +
-           "{ 'email': { $regex: ?0, $options: 'i' } }, " +
-           "{ 'firstName': { $regex: ?0, $options: 'i' } }, " +
-           "{ 'lastName': { $regex: ?0, $options: 'i' } } ] }")
+           "{ 'email': { $regex: ?0, $options: 'i' } } ] }")
     List<User> searchUsers(String searchTerm);
     
     // Find users created within a date range
     List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
     
-    // Find users who haven't logged in for a certain period
-    @Query("{ 'lastLoginAt': { $lt: ?0 }, 'deleted': false }")
-    List<User> findInactiveUsersSince(LocalDateTime date);
-    
     // Count methods
-    long countByDeletedFalse();
-    long countByStatusAndDeletedFalse(String status);
-    long countByRoleAndDeletedFalse(String role);
+    long countByRole(String role);
 }

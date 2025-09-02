@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
 public class UserController {
+
     @Autowired
     private UserService userService;
 
@@ -137,19 +138,6 @@ public class UserController {
         }
     }
 
-    // Get active users
-    @GetMapping("/active")
-    public ResponseEntity<?> getActiveUsers() {
-        try {
-            List<User> users = userService.getActiveUsers();
-            // Remove passwords for security
-            users.forEach(user -> user.setPassword(null));
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error fetching active users: " + e.getMessage()));
-        }
-    }
-
     // Get users by role
     @GetMapping("/role/{role}")
     public ResponseEntity<?> getUsersByRole(@PathVariable String role) {
@@ -225,55 +213,6 @@ public class UserController {
         }
     }
 
-    // User status management endpoints
-    @PostMapping("/{id}/activate")
-    public ResponseEntity<?> activateUser(@PathVariable String id) {
-        try {
-            User user = userService.activateUser(id);
-            user.setPassword(null);
-            return ResponseEntity.ok(Map.of(
-                "message", "User activated successfully",
-                "user", user
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error activating user: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/{id}/deactivate")
-    public ResponseEntity<?> deactivateUser(@PathVariable String id) {
-        try {
-            User user = userService.deactivateUser(id);
-            user.setPassword(null);
-            return ResponseEntity.ok(Map.of(
-                "message", "User deactivated successfully",
-                "user", user
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error deactivating user: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/{id}/suspend")
-    public ResponseEntity<?> suspendUser(@PathVariable String id) {
-        try {
-            User user = userService.suspendUser(id);
-            user.setPassword(null);
-            return ResponseEntity.ok(Map.of(
-                "message", "User suspended successfully",
-                "user", user
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error suspending user: " + e.getMessage()));
-        }
-    }
-
     // Role management endpoints
     @PostMapping("/{id}/promote")
     public ResponseEntity<?> promoteToAdmin(@PathVariable String id) {
@@ -307,31 +246,17 @@ public class UserController {
         }
     }
 
-    // Delete user (soft delete)
+    // Delete user
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
         try {
-            boolean deleted = userService.softDeleteUser(id);
+            boolean deleted = userService.deleteUser(id);
             if (!deleted) {
                 return ResponseEntity.status(404).body(Map.of("error", "User not found"));
             }
             return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Error deleting user: " + e.getMessage()));
-        }
-    }
-
-    // Hard delete user (admin only - permanent deletion)
-    @DeleteMapping("/{id}/permanent")
-    public ResponseEntity<?> permanentDeleteUser(@PathVariable String id) {
-        try {
-            boolean deleted = userService.hardDeleteUser(id);
-            if (!deleted) {
-                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
-            }
-            return ResponseEntity.ok(Map.of("message", "User permanently deleted"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error permanently deleting user: " + e.getMessage()));
         }
     }
 
@@ -368,7 +293,6 @@ public class UserController {
         try {
             Map<String, Object> stats = Map.of(
                 "totalUsers", userService.getTotalUsers(),
-                "activeUsers", userService.getTotalActiveUsers(),
                 "adminUsers", userService.getTotalAdmins(),
                 "timestamp", LocalDateTime.now()
             );
@@ -393,24 +317,6 @@ public class UserController {
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Error fetching recent users: " + e.getMessage()));
-        }
-    }
-
-    // Get inactive users
-    @GetMapping("/inactive")
-    public ResponseEntity<?> getInactiveUsers(@RequestParam(defaultValue = "90") int days) {
-        try {
-            LocalDateTime since = LocalDateTime.now().minusDays(days);
-            List<User> users = userService.getInactiveUsersSince(since);
-            // Remove passwords for security
-            users.forEach(user -> user.setPassword(null));
-            return ResponseEntity.ok(Map.of(
-                "users", users,
-                "inactivePeriod", days + " days",
-                "count", users.size()
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error fetching inactive users: " + e.getMessage()));
         }
     }
 }

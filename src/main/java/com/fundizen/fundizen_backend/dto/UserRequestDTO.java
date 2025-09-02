@@ -20,15 +20,6 @@ public class UserRequestDTO {
         @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
         private String password;
 
-        @Size(max = 50, message = "First name must not exceed 50 characters")
-        private String firstName;
-
-        @Size(max = 50, message = "Last name must not exceed 50 characters")
-        private String lastName;
-
-        @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Please provide a valid phone number")
-        private String phoneNumber;
-
         // Constructors
         public RegisterRequest() {}
 
@@ -47,15 +38,6 @@ public class UserRequestDTO {
         
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
-        
-        public String getFirstName() { return firstName; }
-        public void setFirstName(String firstName) { this.firstName = firstName; }
-        
-        public String getLastName() { return lastName; }
-        public void setLastName(String lastName) { this.lastName = lastName; }
-        
-        public String getPhoneNumber() { return phoneNumber; }
-        public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     }
 
     // Login DTO
@@ -94,15 +76,6 @@ public class UserRequestDTO {
         @Size(max = 100, message = "Email must not exceed 100 characters")
         private String email;
 
-        @Size(max = 50, message = "First name must not exceed 50 characters")
-        private String firstName;
-
-        @Size(max = 50, message = "Last name must not exceed 50 characters")
-        private String lastName;
-
-        @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Please provide a valid phone number")
-        private String phoneNumber;
-
         // Constructors
         public UpdateProfileRequest() {}
 
@@ -112,15 +85,6 @@ public class UserRequestDTO {
         
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
-        
-        public String getFirstName() { return firstName; }
-        public void setFirstName(String firstName) { this.firstName = firstName; }
-        
-        public String getLastName() { return lastName; }
-        public void setLastName(String lastName) { this.lastName = lastName; }
-        
-        public String getPhoneNumber() { return phoneNumber; }
-        public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     }
 
     // Change Password DTO

@@ -34,8 +34,7 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + user.getEmail());
         }
         
-        // Set defaults
-        user.setStatus("active");
+        // Set default role
         user.setRole("user");
         
         // Hash the password
@@ -52,9 +51,7 @@ public class UserService {
             User user = userOpt.get();
             // Check hashed password
             if (passwordEncoder.matches(password, user.getPassword())) {
-                user.updateLastLogin();
-                userRepository.save(user);
-                return user;
+                return userRepository.save(user);
             }
         }
         
@@ -63,11 +60,11 @@ public class UserService {
 
     // CRUD operations
     public List<User> getAllUsers() {
-        return userRepository.findByDeletedFalse();
+        return userRepository.findAll();
     }
 
     public Page<User> getAllUsers(Pageable pageable) {
-        return userRepository.findByDeletedFalse(pageable);
+        return userRepository.findAll(pageable);
     }
 
     public User getUserById(String id) {
@@ -82,17 +79,9 @@ public class UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-    // Status management
-    public List<User> getActiveUsers() {
-        return userRepository.findActiveUsers();
-    }
-
-    public List<User> getUsersByStatus(String status) {
-        return userRepository.findByStatusAndDeletedFalse(status);
-    }
-
+    // Role management
     public List<User> getUsersByRole(String role) {
-        return userRepository.findByRoleAndDeletedFalse(role);
+        return userRepository.findByRole(role);
     }
 
     public List<User> getAdminUsers() {
@@ -123,12 +112,9 @@ public class UserService {
                 throw new RuntimeException("Email already exists: " + updatedUser.getEmail());
             }
             
-            // Update fields (excluding password, role, and system fields)
+            // Update fields (excluding password and system fields)
             existingUser.setUsername(updatedUser.getUsername());
             existingUser.setEmail(updatedUser.getEmail());
-            existingUser.setFirstName(updatedUser.getFirstName());
-            existingUser.setLastName(updatedUser.getLastName());
-            existingUser.setPhoneNumber(updatedUser.getPhoneNumber());
             
             return userRepository.save(existingUser);
         }
@@ -143,43 +129,6 @@ public class UserService {
             User user = userOpt.get();
             // Hash the new password
             user.setPassword(passwordEncoder.encode(newPassword));
-            return userRepository.save(user);
-        }
-        
-        throw new RuntimeException("User not found");
-    }
-
-    // User status management
-    public User activateUser(String id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.activate();
-            return userRepository.save(user);
-        }
-        
-        throw new RuntimeException("User not found");
-    }
-
-    public User deactivateUser(String id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.deactivate();
-            return userRepository.save(user);
-        }
-        
-        throw new RuntimeException("User not found");
-    }
-
-    public User suspendUser(String id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.suspend();
             return userRepository.save(user);
         }
         
@@ -212,20 +161,7 @@ public class UserService {
     }
 
     // Delete operations
-    public boolean softDeleteUser(String id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.softDelete();
-            userRepository.save(user);
-            return true;
-        }
-        
-        return false;
-    }
-
-    public boolean hardDeleteUser(String id) {
+    public boolean deleteUser(String id) {
         Optional<User> userOpt = userRepository.findById(id);
         
         if (userOpt.isPresent()) {
@@ -246,20 +182,12 @@ public class UserService {
     }
 
     // Statistics and analytics
-    public long getTotalActiveUsers() {
-        return userRepository.countByStatusAndDeletedFalse("active");
-    }
-
     public long getTotalUsers() {
-        return userRepository.countByDeletedFalse();
+        return userRepository.count();
     }
 
     public long getTotalAdmins() {
-        return userRepository.countByRoleAndDeletedFalse("admin");
-    }
-
-    public List<User> getInactiveUsersSince(LocalDateTime date) {
-        return userRepository.findInactiveUsersSince(date);
+        return userRepository.countByRole("admin");
     }
 
     public List<User> getRecentUsers(LocalDateTime since) {

@@ -20,7 +20,7 @@ public class Campaign {
     @Id
     private String id;
 
-    @Indexed // For efficient queries - now optional since no user validation
+    @Indexed // For efficient queries
     private String creatorId;
 
     @NotNull(message = "Campaign name is required")
@@ -37,11 +37,17 @@ public class Campaign {
     @Size(min = 10, max = 2000, message = "Description must be between 10 and 2000 characters")
     private String description;
 
-    // use cloudinary to save image and video 
+    // Use Cloudinary to save image
     @Pattern(regexp = "^https?://.*\\.(jpg|jpeg|png|gif|webp)$", 
              message = "Image URL must be a valid HTTP/HTTPS URL ending with jpg, jpeg, png, gif, or webp",
              flags = Pattern.Flag.CASE_INSENSITIVE)
     private String imageUrl;
+
+    // Use Cloudinary to save documents for admin review (medical reports, etc.)
+    @Pattern(regexp = "^https?://.*\\.(pdf|doc|docx)$", 
+             message = "Document URL must be a valid HTTP/HTTPS URL ending with pdf, doc, or docx",
+             flags = Pattern.Flag.CASE_INSENSITIVE)
+    private String documentUrl;
 
     @NotNull(message = "Goal amount is required")
     @DecimalMin(value = "1.0", message = "Goal amount must be at least RM 1.00")
@@ -59,12 +65,6 @@ public class Campaign {
     @NotNull(message = "End date is required")
     private LocalDate endDate;
 
-    // use cloudinary to save documents to review by admin example medical report 
-    @Pattern(regexp = "^https?://.*\\.(pdf|doc|docx)$", 
-             message = "Document URL must be a valid HTTP/HTTPS URL ending with pdf, doc, or docx",
-             flags = Pattern.Flag.CASE_INSENSITIVE)
-    private String documentUrl;
-
     @Pattern(regexp = "^(pending|approved|rejected)$", 
              message = "Status must be one of: pending, approved, rejected")
     @Indexed // For efficient status filtering
@@ -77,6 +77,13 @@ public class Campaign {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Indexed
+    private boolean deleted = false;
+    
+    private LocalDateTime deletedAt;
+    
+    private String rejectionReason;
 
     // Custom validation method
     @AssertTrue(message = "End date must be after start date")
@@ -153,6 +160,12 @@ public class Campaign {
         return isActive() && getCompletionPercentage() < 100.0;
     }
 
+    // Soft delete method
+    public void softDelete() {
+        this.deleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
     // Getters and Setters
     public String getId() {
         return id;
@@ -202,6 +215,14 @@ public class Campaign {
         this.imageUrl = imageUrl;
     }
 
+    public String getDocumentUrl() {
+        return documentUrl;
+    }
+
+    public void setDocumentUrl(String documentUrl) {
+        this.documentUrl = documentUrl;
+    }
+
     public Double getGoalAmount() {
         return goalAmount;
     }
@@ -234,14 +255,6 @@ public class Campaign {
         this.endDate = endDate;
     }
 
-    public String getDocumentUrl() {
-        return documentUrl;
-    }
-
-    public void setDocumentUrl(String documentUrl) {
-        this.documentUrl = documentUrl;
-    }
-
     public String getStatus() {
         return status;
     }
@@ -272,19 +285,6 @@ public class Campaign {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    @Indexed
-    private boolean deleted = false;
-    
-    private LocalDateTime deletedAt;
-    
-    private String rejectionReason;
-    
-    // Soft delete method
-    public void softDelete() {
-        this.deleted = true;
-        this.deletedAt = LocalDateTime.now();
     }
 
     public boolean isDeleted() {
