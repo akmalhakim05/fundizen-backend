@@ -1,4 +1,3 @@
-// FirebaseService.java
 package com.fundizen.fundizen_backend.service;
 
 import com.google.firebase.FirebaseApp;
@@ -13,10 +12,15 @@ import org.slf4j.LoggerFactory;
 public class FirebaseService {
 
     private static final Logger logger = LoggerFactory.getLogger(FirebaseService.class);
-    private final FirebaseAuth firebaseAuth;
 
-    public FirebaseService() {
-        this.firebaseAuth = FirebaseAuth.getInstance();
+    /**
+     * Get FirebaseAuth instance, ensuring Firebase is initialized
+     */
+    private FirebaseAuth getFirebaseAuth() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IllegalStateException("Firebase has not been initialized. Check your Firebase configuration.");
+        }
+        return FirebaseAuth.getInstance();
     }
 
     /**
@@ -24,7 +28,7 @@ public class FirebaseService {
      */
     public FirebaseToken verifyIdToken(String idToken) throws FirebaseAuthException {
         try {
-            return firebaseAuth.verifyIdToken(idToken);
+            return getFirebaseAuth().verifyIdToken(idToken);
         } catch (FirebaseAuthException e) {
             logger.error("Error verifying Firebase token: {}", e.getMessage());
             throw e;
@@ -36,7 +40,7 @@ public class FirebaseService {
      */
     public com.google.firebase.auth.UserRecord getFirebaseUser(String uid) throws FirebaseAuthException {
         try {
-            return firebaseAuth.getUser(uid);
+            return getFirebaseAuth().getUser(uid);
         } catch (FirebaseAuthException e) {
             logger.error("Error getting Firebase user: {}", e.getMessage());
             throw e;

@@ -30,9 +30,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+                // Public endpoints - allow all authentication methods
                 .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                .requestMatchers("/api/auth/**").permitAll() // Allow all auth endpoints
                 .requestMatchers("/api/campaigns").permitAll() // GET campaigns (public)
+                .requestMatchers("/api/campaigns/{id}").permitAll() // GET single campaign (public)
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 
                 // Protected endpoints - require authentication
