@@ -15,6 +15,8 @@ public class User {
     @Id
     private String id;
 
+    private String firebaseUid;  // Firebase UID for linking
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -26,29 +28,30 @@ public class User {
 
     private String username;
 
-    private String role = "user";
+    private String role = "user";   // default role
 
-    private boolean verified = false;
+    private boolean verified = false; // email verified status
 
     // Constructors
     public User() {}
 
-    public User(String email, String username) {
-        this.email = email;
-        this.username = username;
-        this.role = "user";
-        this.verified = false;
-    }
-
-    public User(String id, LocalDateTime createdAt, LocalDateTime updatedAt, 
+    public User(String id, String firebaseUid, LocalDateTime createdAt, LocalDateTime updatedAt,
                 String email, String username, String role, boolean verified) {
         this.id = id;
+        this.firebaseUid = firebaseUid;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.email = email;
         this.username = username;
         this.role = role;
         this.verified = verified;
+    }
+
+    public User(String email, String username) {
+        this.email = email;
+        this.username = username;
+        this.role = "user";
+        this.verified = false;
     }
 
     // Builder pattern
@@ -58,6 +61,7 @@ public class User {
 
     public static class UserBuilder {
         private String id;
+        private String firebaseUid;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private String email;
@@ -67,6 +71,11 @@ public class User {
 
         public UserBuilder id(String id) {
             this.id = id;
+            return this;
+        }
+
+        public UserBuilder firebaseUid(String firebaseUid) {
+            this.firebaseUid = firebaseUid;
             return this;
         }
 
@@ -101,17 +110,25 @@ public class User {
         }
 
         public User build() {
-            return new User(id, createdAt, updatedAt, email, username, role, verified);
+            return new User(id, firebaseUid, createdAt, updatedAt, email, username, role, verified);
         }
     }
 
-    // Getters and Setters
+    // Getters & Setters
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getFirebaseUid() {
+        return firebaseUid;
+    }
+
+    public void setFirebaseUid(String firebaseUid) {
+        this.firebaseUid = firebaseUid;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -162,13 +179,15 @@ public class User {
         this.verified = verified;
     }
 
+    // equals & hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof User)) return false;
         User user = (User) o;
         return verified == user.verified &&
                 Objects.equals(id, user.id) &&
+                Objects.equals(firebaseUid, user.firebaseUid) &&
                 Objects.equals(email, user.email) &&
                 Objects.equals(username, user.username) &&
                 Objects.equals(role, user.role);
@@ -176,13 +195,14 @@ public class User {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, email, username, role, verified);
+        return Objects.hash(id, firebaseUid, email, username, role, verified);
     }
 
     @Override
     public String toString() {
         return "User{" +
                 "id='" + id + '\'' +
+                ", firebaseUid='" + firebaseUid + '\'' +
                 ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 ", role='" + role + '\'' +

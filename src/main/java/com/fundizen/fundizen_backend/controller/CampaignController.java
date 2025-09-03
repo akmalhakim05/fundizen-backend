@@ -1,7 +1,9 @@
 package com.fundizen.fundizen_backend.controller;
 
 import com.fundizen.fundizen_backend.models.Campaign;
+import com.fundizen.fundizen_backend.models.User;
 import com.fundizen.fundizen_backend.service.CampaignService;
+import com.fundizen.fundizen_backend.service.AuthService;
 
 import jakarta.validation.Valid;
 
@@ -21,28 +23,39 @@ public class CampaignController {
     @Autowired
     private CampaignService campaignService;
 
+    @Autowired
+    private AuthService authService;
+
     // Create a new campaign (no authentication required for now)
     @PostMapping("/create")
-    public ResponseEntity<?> createCampaign(@Valid @RequestBody Campaign campaign, BindingResult result) {
+    public ResponseEntity<?> createCampaign(
+            @RequestHeader("Authorization") String idToken,
+            @Valid @RequestBody Campaign campaign,
+            BindingResult result) {
         try {
-            // Check for validation errors
             if (result.hasErrors()) {
                 List<String> errors = result.getFieldErrors().stream()
                         .map(error -> error.getField() + ": " + error.getDefaultMessage())
                         .collect(Collectors.toList());
                 return ResponseEntity.status(400).body(Map.of("errors", errors));
             }
-            
-            // Set a default creator ID since we don't have authentication
-            if (campaign.getCreatorId() == null || campaign.getCreatorId().isEmpty()) {
-                campaign.setCreatorId("default-user");
+
+            // Verify Firebase token
+            String token = idToken.replace("Bearer ", "");
+            User user = authService.verifyIdToken(token);
+
+            if (!user.isVerified()) {
+                return ResponseEntity.status(403).body("Email not verified. Please verify first.");
             }
-            
+
+            // Assign creator
+            campaign.setCreatorId(user.getId());
+
             Campaign createdCampaign = campaignService.createCampaign(campaign);
             return ResponseEntity.ok(createdCampaign);
-            
+
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error creating campaign: " + e.getMessage());
+            return ResponseEntity.status(401).body("Unauthorized: " + e.getMessage());
         }
     }
 
