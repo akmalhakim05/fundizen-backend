@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
@@ -19,19 +19,14 @@ public class FirebaseConfig {
     public void initialize() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
-                // Use FileInputStream to read the service account key
-                FileInputStream serviceAccount = new FileInputStream(
-                    new ClassPathResource("serviceAccountKey.json").getFile()
-                );
-                
-                FirebaseOptions options = new FirebaseOptions.Builder()
+                // Load service account from resources (works in JAR too)
+                InputStream serviceAccount = new ClassPathResource("serviceAccountKey.json").getInputStream();
+
+                FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                         .build();
 
                 FirebaseApp.initializeApp(options);
-                
-                // Close the stream
-                serviceAccount.close();
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize Firebase: " + e.getMessage(), e);
