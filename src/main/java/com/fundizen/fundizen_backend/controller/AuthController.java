@@ -62,6 +62,16 @@ public class AuthController {
                 ));
             }
 
+            // Check if email is verified in Firebase
+            if (!decodedToken.isEmailVerified()) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "error", "Email not verified", 
+                    "message", "Please verify your email address before completing registration",
+                    "emailVerified", false,
+                    "email", decodedToken.getEmail()
+                ));
+            }
+
             // Create user object from request data
             User user = new User();
             user.setUsername(userData.get("username"));
@@ -88,7 +98,7 @@ public class AuthController {
                 ));
             }
 
-            // Create user with Firebase verification
+            // Create user with Firebase verification - user is automatically verified since Firebase email is verified
             User createdUser = userService.createUserFromFirebase(user, decodedToken.getUid());
             
             Map<String, Object> userResponse = Map.of(
@@ -96,7 +106,8 @@ public class AuthController {
                 "username", createdUser.getUsername(),
                 "email", createdUser.getEmail(),
                 "role", createdUser.getRole(),
-                "verified", createdUser.isVerified()
+                "verified", createdUser.isVerified(),
+                "emailVerified", true
             );
             
             return ResponseEntity.ok(Map.of(
@@ -144,16 +155,22 @@ public class AuthController {
                 ));
             }
 
+            // Check if email is verified in Firebase
+            if (!decodedToken.isEmailVerified()) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "error", "Email not verified", 
+                    "message", "Please verify your email address to login",
+                    "emailVerified", false,
+                    "email", decodedToken.getEmail()
+                ));
+            }
+
             // Authenticate user with traditional credentials
             User authenticatedUser = userService.authenticateUser(usernameOrEmail, password);
             
-            // CHECK: Block login if user is not verified
+            // Update user verification status based on Firebase email verification
             if (!authenticatedUser.isVerified()) {
-                return ResponseEntity.status(403).body(Map.of(
-                    "error", "Account not verified. Please verify your account before logging in.",
-                    "verified", false,
-                    "userId", authenticatedUser.getId()
-                ));
+                authenticatedUser = userService.updateEmailVerificationStatus(authenticatedUser.getId(), true);
             }
             
             // Optional: Link Firebase UID if not already linked
@@ -166,7 +183,8 @@ public class AuthController {
                 "username", authenticatedUser.getUsername(),
                 "email", authenticatedUser.getEmail(),
                 "role", authenticatedUser.getRole(),
-                "verified", authenticatedUser.isVerified()
+                "verified", authenticatedUser.isVerified(),
+                "emailVerified", true
             );
             
             return ResponseEntity.ok(Map.of(
@@ -179,6 +197,78 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Error during authentication: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Resend verification email
+     * POST /api/auth/resend-verification
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerificationEmail(@RequestBody Map<String, String> request) {
+        try {
+            String firebaseToken = request.get("token");
+            
+            if (firebaseToken == null || firebaseToken.trim().isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of("error", "Firebase token is required"));
+            }
+
+            // Verify token and get user info
+            FirebaseToken decodedToken = firebaseService.verifyIdToken(firebaseToken);
+            
+            if (decodedToken.isEmailVerified()) {
+                return ResponseEntity.status(400).body(Map.of(
+                    "error", "Email already verified",
+                    "emailVerified", true
+                ));
+            }
+
+            // Request Firebase to resend verification email
+            firebaseService.sendEmailVerification(decodedToken.getUid());
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Verification email sent successfully",
+                "email", decodedToken.getEmail()
+            ));
+            
+        } catch (FirebaseAuthException e) {
+            return ResponseEntity.status(401).body(Map.of(
+                "error", "Invalid Firebase token",
+                "details", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Error sending verification email: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Check email verification status
+     * POST /api/auth/check-verification
+     */
+    @PostMapping("/check-verification")
+    public ResponseEntity<?> checkEmailVerification(@RequestBody Map<String, String> request) {
+        try {
+            String firebaseToken = request.get("token");
+            
+            if (firebaseToken == null || firebaseToken.trim().isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of("error", "Firebase token is required"));
+            }
+
+            FirebaseToken decodedToken = firebaseService.verifyIdToken(firebaseToken);
+            
+            return ResponseEntity.ok(Map.of(
+                "emailVerified", decodedToken.isEmailVerified(),
+                "email", decodedToken.getEmail(),
+                "uid", decodedToken.getUid()
+            ));
+            
+        } catch (FirebaseAuthException e) {
+            return ResponseEntity.status(401).body(Map.of(
+                "error", "Invalid Firebase token",
+                "details", e.getMessage()
+            ));
         }
     }
 
@@ -199,6 +289,7 @@ public class AuthController {
             return ResponseEntity.ok(Map.of(
                     "uid", decodedToken.getUid(),
                     "email", decodedToken.getEmail(),
+                    "emailVerified", decodedToken.isEmailVerified(),
                     "valid", true,
                     "message", "Token is valid"
             ));

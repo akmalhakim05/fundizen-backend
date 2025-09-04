@@ -34,8 +34,9 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + user.getEmail());
         }
         
-        // Set default role
+        // Set default role and verification status
         user.setRole("user");
+        user.setVerified(false); // Email not verified for regular registration
         
         // Hash the password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -51,7 +52,7 @@ public class UserService {
             User user = userOpt.get();
             // Check hashed password
             if (passwordEncoder.matches(password, user.getPassword())) {
-                return userRepository.save(user);
+                return user;
             }
         }
         
@@ -59,7 +60,7 @@ public class UserService {
     }
 
     /**
-     * Create user from Firebase authentication (no password validation needed)
+     * Create user from Firebase authentication (automatically verified)
      */
     public User createUserFromFirebase(User user, String firebaseUid) {
         // Check if username already exists
@@ -74,19 +75,34 @@ public class UserService {
         
         // Set default role and verify immediately for Firebase users
         user.setRole("user");
-        user.setVerified(true);
+        user.setVerified(true); // Email verified through Firebase
         user.setUid(firebaseUid);
         
-        // FIXED: Hash the password instead of setting empty string
+        // Hash the password
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         } else {
             // For Firebase-only users, set a random password they'll never use
             user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+        }
+        
+        return userRepository.save(user);
     }
-    
-    return userRepository.save(user);
-}
+
+    /**
+     * Update email verification status
+     */
+    public User updateEmailVerificationStatus(String userId, boolean verified) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setVerified(verified);
+            return userRepository.save(user);
+        }
+        
+        throw new RuntimeException("User not found");
+    }
 
     /**
      * Link existing user account with Firebase UID
@@ -96,8 +112,9 @@ public class UserService {
         
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            // You might want to add a firebaseUid field to User model
-            // user.setFirebaseUid(firebaseUid);
+            user.setUid(firebaseUid);
+            // Also mark as verified since Firebase handles email verification
+            user.setVerified(true);
             return userRepository.save(user);
         }
         
@@ -105,12 +122,43 @@ public class UserService {
     }
 
     /**
-     * Get user by Firebase UID (if you add firebaseUid field to User model)
+     * Get user by Firebase UID
      */
     public User getUserByFirebaseUid(String firebaseUid) {
-        // Add this method to repository: Optional<User> findByFirebaseUid(String firebaseUid);
-        // return userRepository.findByFirebaseUid(firebaseUid).orElse(null);
-        return null; // Placeholder - implement if you add firebaseUid field
+        return userRepository.findByUid(firebaseUid).orElse(null);
+    }
+
+    /**
+     * Find user by Firebase UID or create if doesn't exist
+     */
+    public User findOrCreateFromFirebase(String firebaseUid, String email, String username) {
+        // First try to find by Firebase UID
+        Optional<User> existingUser = userRepository.findByUid(firebaseUid);
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+
+        // Try to find by email
+        existingUser = userRepository.findByEmail(email);
+        if (existingUser.isPresent()) {
+            // Link the Firebase UID
+            User user = existingUser.get();
+            user.setUid(firebaseUid);
+            user.setVerified(true); // Mark as verified
+            return userRepository.save(user);
+        }
+
+        // Create new user
+        User newUser = new User();
+        newUser.setUid(firebaseUid);
+        newUser.setEmail(email);
+        newUser.setUsername(username != null ? username : email.split("@")[0]);
+        newUser.setRole("user");
+        newUser.setVerified(true);
+        // Set random password since Firebase handles authentication
+        newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+
+        return userRepository.save(newUser);
     }
 
     // CRUD operations
@@ -247,5 +295,22 @@ public class UserService {
 
     public List<User> getRecentUsers(LocalDateTime since) {
         return userRepository.findByCreatedAtBetween(since, LocalDateTime.now());
+    }
+
+    // Email verification specific methods
+    public List<User> getUnverifiedUsers() {
+        return userRepository.findByVerifiedFalse();
+    }
+
+    public List<User> getVerifiedUsers() {
+        return userRepository.findByVerifiedTrue();
+    }
+
+    public long getVerifiedUsersCount() {
+        return userRepository.countByVerified(true);
+    }
+
+    public long getUnverifiedUsersCount() {
+        return userRepository.countByVerified(false);
     }
 }
