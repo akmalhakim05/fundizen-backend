@@ -96,8 +96,7 @@ public class AuthController {
                 "username", createdUser.getUsername(),
                 "email", createdUser.getEmail(),
                 "role", createdUser.getRole(),
-                "verified", createdUser.isVerified(),
-                "firebaseUid", createdUser.getUid()
+                "verified", createdUser.isVerified()
             );
             
             return ResponseEntity.ok(Map.of(

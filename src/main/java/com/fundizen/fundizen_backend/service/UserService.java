@@ -72,14 +72,21 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + user.getEmail());
         }
         
-        // Set default role
+        // Set default role and verify immediately for Firebase users
         user.setRole("user");
+        user.setVerified(true);
+        user.setUid(firebaseUid);
         
-        // No password hashing needed for Firebase users
-        user.setPassword(""); 
-        
-        return userRepository.save(user);
+        // FIXED: Hash the password instead of setting empty string
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        } else {
+            // For Firebase-only users, set a random password they'll never use
+            user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
     }
+    
+    return userRepository.save(user);
+}
 
     /**
      * Link existing user account with Firebase UID
