@@ -31,7 +31,7 @@ public class CloudinaryService {
     );
 
     // File size limits (in bytes)
-    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final long MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
     public CloudinaryService(Cloudinary cloudinary) {
@@ -39,98 +39,128 @@ public class CloudinaryService {
     }
 
     /**
-     * Upload campaign image with optimization
+     * Upload campaign image - simplified version without transformations
      */
     public String uploadCampaignImage(MultipartFile file) throws IOException {
+        logger.info("Starting campaign image upload: {} ({})", 
+                   file.getOriginalFilename(), formatFileSize(file.getSize()));
+        
         validateImageFile(file);
         
         String publicId = "campaigns/" + UUID.randomUUID().toString();
         
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap(
-                        "public_id", publicId,
-                        "folder", "fundizen/campaigns",
-                        "resource_type", "image",
-                        "transformation", Arrays.asList(
-                                new Transformation()
-                                        .width(800)
-                                        .height(600)
-                                        .crop("fill")
-                                        .quality("auto")
-                                        .fetchFormat("auto")
-                        ),
-                        "tags", Arrays.asList("campaign", "image"),
-                        "overwrite", false
-                ));
-        
-        String secureUrl = (String) uploadResult.get("secure_url");
-        logger.info("Campaign image uploaded successfully: {}", secureUrl);
-        return secureUrl;
+        try {
+            logger.info("Uploading to Cloudinary with publicId: {}", publicId);
+            
+            // Simplified upload without transformations first
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "folder", "fundizen/campaigns",
+                            "resource_type", "image",
+                            "tags", Arrays.asList("campaign", "image"),
+                            "overwrite", false
+                    ));
+            
+            String secureUrl = (String) uploadResult.get("secure_url");
+            logger.info("Campaign image uploaded successfully: {} -> {}", 
+                       file.getOriginalFilename(), secureUrl);
+            
+            logger.debug("Upload result: {}", uploadResult);
+            
+            return secureUrl;
+            
+        } catch (Exception e) {
+            logger.error("Cloudinary upload failed for file: {} - Error: {}", 
+                        file.getOriginalFilename(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
      * Upload campaign document
      */
     public String uploadCampaignDocument(MultipartFile file) throws IOException {
+        logger.info("Starting campaign document upload: {} ({})", 
+                   file.getOriginalFilename(), formatFileSize(file.getSize()));
+        
         validateDocumentFile(file);
         
         String publicId = "documents/" + UUID.randomUUID().toString();
         
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap(
-                        "public_id", publicId,
-                        "folder", "fundizen/documents",
-                        "resource_type", "raw", // For non-image files
-                        "tags", Arrays.asList("campaign", "document"),
-                        "overwrite", false
-                ));
-        
-        String secureUrl = (String) uploadResult.get("secure_url");
-        logger.info("Campaign document uploaded successfully: {}", secureUrl);
-        return secureUrl;
+        try {
+            logger.info("Uploading document to Cloudinary with publicId: {}", publicId);
+            
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "folder", "fundizen/documents",
+                            "resource_type", "raw",
+                            "tags", Arrays.asList("campaign", "document"),
+                            "overwrite", false
+                    ));
+            
+            String secureUrl = (String) uploadResult.get("secure_url");
+            logger.info("Campaign document uploaded successfully: {} -> {}", 
+                       file.getOriginalFilename(), secureUrl);
+            return secureUrl;
+            
+        } catch (Exception e) {
+            logger.error("Cloudinary document upload failed for file: {} - Error: {}", 
+                        file.getOriginalFilename(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
      * Upload user profile image
      */
     public String uploadProfileImage(MultipartFile file) throws IOException {
+        logger.info("Starting profile image upload: {} ({})", 
+                   file.getOriginalFilename(), formatFileSize(file.getSize()));
+        
         validateImageFile(file);
         
         String publicId = "profiles/" + UUID.randomUUID().toString();
         
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap(
-                        "public_id", publicId,
-                        "folder", "fundizen/profiles",
-                        "resource_type", "image",
-                        "transformation", Arrays.asList(
-                                new Transformation()
-                                        .width(300)
-                                        .height(300)
-                                        .crop("fill")
-                                        .gravity("face") // Focus on faces if detected
-                                        .quality("auto")
-                                        .fetchFormat("auto")
-                        ),
-                        "tags", Arrays.asList("profile", "image"),
-                        "overwrite", false
-                ));
-        
-        String secureUrl = (String) uploadResult.get("secure_url");
-        logger.info("Profile image uploaded successfully: {}", secureUrl);
-        return secureUrl;
+        try {
+            logger.info("Uploading profile image to Cloudinary with publicId: {}", publicId);
+            
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "folder", "fundizen/profiles",
+                            "resource_type", "image",
+                            "tags", Arrays.asList("profile", "image"),
+                            "overwrite", false
+                    ));
+            
+            String secureUrl = (String) uploadResult.get("secure_url");
+            logger.info("Profile image uploaded successfully: {} -> {}", 
+                       file.getOriginalFilename(), secureUrl);
+            return secureUrl;
+            
+        } catch (Exception e) {
+            logger.error("Cloudinary profile image upload failed for file: {} - Error: {}", 
+                        file.getOriginalFilename(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
      * Generic file upload (backward compatibility)
      */
     public String uploadFile(MultipartFile file) throws IOException {
+        logger.info("Starting generic file upload: {} ({})", 
+                   file.getOriginalFilename(), formatFileSize(file.getSize()));
+        
         if (isImageFile(file)) {
             return uploadCampaignImage(file);
         } else if (isDocumentFile(file)) {
             return uploadCampaignDocument(file);
         } else {
-            throw new IllegalArgumentException("Unsupported file type: " + file.getContentType());
+            throw new IllegalArgumentException("Unsupported file type: " + file.getContentType() + 
+                                             ". Allowed types: " + ALLOWED_IMAGE_TYPES + ", " + ALLOWED_DOCUMENT_TYPES);
         }
     }
 
@@ -139,6 +169,8 @@ public class CloudinaryService {
      */
     public boolean deleteFile(String publicId) {
         try {
+            logger.info("Deleting file from Cloudinary: {}", publicId);
+            
             Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
             String status = (String) result.get("result");
             boolean success = "ok".equals(status);
@@ -213,42 +245,56 @@ public class CloudinaryService {
      * Validate image file
      */
     private void validateImageFile(MultipartFile file) throws IOException {
+        logger.debug("Validating image file: {} (size: {}, type: {})", 
+                    file.getOriginalFilename(), formatFileSize(file.getSize()), file.getContentType());
+        
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
         }
         
         if (!ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
             throw new IllegalArgumentException(
-                "Invalid image type. Allowed types: " + ALLOWED_IMAGE_TYPES
+                "Invalid image type: " + file.getContentType() + 
+                ". Allowed types: " + ALLOWED_IMAGE_TYPES
             );
         }
         
         if (file.getSize() > MAX_IMAGE_SIZE) {
             throw new IllegalArgumentException(
-                "Image size too large. Maximum size: " + (MAX_IMAGE_SIZE / 1024 / 1024) + "MB"
+                "Image size too large: " + formatFileSize(file.getSize()) + 
+                ". Maximum size: " + formatFileSize(MAX_IMAGE_SIZE)
             );
         }
+        
+        logger.debug("Image file validation passed");
     }
 
     /**
      * Validate document file
      */
     private void validateDocumentFile(MultipartFile file) throws IOException {
+        logger.debug("Validating document file: {} (size: {}, type: {})", 
+                    file.getOriginalFilename(), formatFileSize(file.getSize()), file.getContentType());
+        
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
         }
         
         if (!ALLOWED_DOCUMENT_TYPES.contains(file.getContentType())) {
             throw new IllegalArgumentException(
-                "Invalid document type. Allowed types: " + ALLOWED_DOCUMENT_TYPES
+                "Invalid document type: " + file.getContentType() + 
+                ". Allowed types: " + ALLOWED_DOCUMENT_TYPES
             );
         }
         
         if (file.getSize() > MAX_DOCUMENT_SIZE) {
             throw new IllegalArgumentException(
-                "Document size too large. Maximum size: " + (MAX_DOCUMENT_SIZE / 1024 / 1024) + "MB"
+                "Document size too large: " + formatFileSize(file.getSize()) + 
+                ". Maximum size: " + formatFileSize(MAX_DOCUMENT_SIZE)
             );
         }
+        
+        logger.debug("Document file validation passed");
     }
 
     /**
@@ -274,13 +320,27 @@ public class CloudinaryService {
             return originalUrl; // Return original if can't extract public ID
         }
         
-        return cloudinary.url()
-                .transformation(new Transformation()
-                        .width(width)
-                        .height(height)
-                        .crop(crop != null ? crop : "fill")
-                        .quality("auto")
-                        .fetchFormat("auto"))
-                .generate(publicId);
+        try {
+            return cloudinary.url()
+                    .transformation(new Transformation()
+                            .width(width)
+                            .height(height)
+                            .crop(crop != null ? crop : "fill")
+                            .quality("auto:good")
+                            .fetchFormat("auto"))
+                    .generate(publicId);
+        } catch (Exception e) {
+            logger.error("Error generating optimized URL for: {}", originalUrl, e);
+            return originalUrl;
+        }
+    }
+
+    /**
+     * Format file size for display
+     */
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int z = (63 - Long.numberOfLeadingZeros(bytes)) / 10;
+        return String.format("%.1f %sB", (double) bytes / (1L << (z * 10)), " KMGTPE".charAt(z));
     }
 }
