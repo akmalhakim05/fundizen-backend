@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/campaigns")
-@CrossOrigin(origins = "*")
+@CrossOrigin // Simple CORS - allows all origins
 public class CampaignController {
 
     @Autowired

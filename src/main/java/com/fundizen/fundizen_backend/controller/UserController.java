@@ -21,74 +21,11 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
+@CrossOrigin // Simple CORS - allows all origins
 public class UserController {
 
     @Autowired
     private UserService userService;
-
-    // User registration
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody User user, BindingResult result) {
-        try {
-        // Check for validation errors
-        if (result.hasErrors()) {
-            List<String> errors = result.getFieldErrors().stream()
-                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                    .collect(Collectors.toList());
-            return ResponseEntity.status(400).body(Map.of("errors", errors));
-        }
-        
-        User createdUser = userService.createUser(user);
-        
-        // Return only essential user information
-        Map<String, Object> userResponse = Map.of(
-            "id", createdUser.getId(),
-            "role", createdUser.getRole()
-        );
-        
-        return ResponseEntity.ok(Map.of(
-            "message", "User registered successfully",
-            "user", userResponse
-        ));
-        
-    } catch (RuntimeException e) {
-        return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-    } catch (Exception e) {
-        return ResponseEntity.status(500).body(Map.of("error", "Error creating user: " + e.getMessage()));
-    }
-}
-
-    // User login
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> credentials) {
-        try {
-            String usernameOrEmail = credentials.get("usernameOrEmail");
-            String password = credentials.get("password");
-            
-            if (usernameOrEmail == null || password == null) {
-                return ResponseEntity.status(400).body(Map.of("error", "Username/email and password are required"));
-            }
-            
-            User authenticatedUser = userService.authenticateUser(usernameOrEmail, password);
-            
-            // Return only essential user information
-            Map<String, Object> userResponse = Map.of(
-                "id", authenticatedUser.getId(),
-                "role", authenticatedUser.getRole()
-            );
-            
-            return ResponseEntity.ok(Map.of(
-                "message", "Login successful",
-                "user", userResponse
-            ));
-            
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error during authentication: " + e.getMessage()));
-        }
-    }
 
     // Get all users (with pagination)
     @GetMapping
