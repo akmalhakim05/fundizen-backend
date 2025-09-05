@@ -37,14 +37,14 @@ public class Campaign {
     @Size(min = 10, max = 2000, message = "Description must be between 10 and 2000 characters")
     private String description;
 
-    // Use Cloudinary to save image
-    @Pattern(regexp = "^https?://.*\\.(jpg|jpeg|png|gif|webp)$", 
+    // Fix: Make image URL optional and improve validation
+    @Pattern(regexp = "^$|^https?://.*\\.(jpg|jpeg|png|gif|webp)$", 
              message = "Image URL must be a valid HTTP/HTTPS URL ending with jpg, jpeg, png, gif, or webp",
              flags = Pattern.Flag.CASE_INSENSITIVE)
     private String imageUrl;
 
-    // Use Cloudinary to save documents for admin review (medical reports, etc.)
-    @Pattern(regexp = "^https?://.*\\.(pdf|doc|docx)$", 
+    // Fix: Make document URL optional and improve validation
+    @Pattern(regexp = "^$|^https?://.*\\.(pdf|doc|docx)$", 
              message = "Document URL must be a valid HTTP/HTTPS URL ending with pdf, doc, or docx",
              flags = Pattern.Flag.CASE_INSENSITIVE)
     private String documentUrl;

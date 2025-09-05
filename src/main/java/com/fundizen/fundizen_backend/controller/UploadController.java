@@ -3,12 +3,17 @@ package com.fundizen.fundizen_backend.controller;
 import com.fundizen.fundizen_backend.service.CloudinaryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -17,6 +22,11 @@ public class UploadController {
 
     private static final Logger logger = LoggerFactory.getLogger(UploadController.class);
     private final CloudinaryService cloudinaryService;
+    
+    // Simple rate limiting for optimization requests
+    private final Map<String, AtomicLong> clientRequestCounts = new ConcurrentHashMap<>();
+    private final long RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+    private final long MAX_REQUESTS_PER_WINDOW = 100; // 100 requests per minute per client
 
     public UploadController(CloudinaryService cloudinaryService) {
         this.cloudinaryService = cloudinaryService;
@@ -43,14 +53,16 @@ public class UploadController {
             
             logger.info("Campaign image uploaded successfully: {}", url);
             
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "url", url,
-                "type", "image",
-                "fileName", file.getOriginalFilename(),
-                "fileSize", formatFileSize(file.getSize()),
-                "message", "Campaign image uploaded successfully"
-            ));
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS)) // Cache for 24 hours
+                .body(Map.of(
+                    "success", true,
+                    "url", url,
+                    "type", "image",
+                    "fileName", file.getOriginalFilename(),
+                    "fileSize", formatFileSize(file.getSize()),
+                    "message", "Campaign image uploaded successfully"
+                ));
             
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid file upload attempt: {}", e.getMessage());
@@ -86,14 +98,16 @@ public class UploadController {
             
             logger.info("Campaign document uploaded successfully: {}", url);
             
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "url", url,
-                "type", "document",
-                "fileName", file.getOriginalFilename(),
-                "fileSize", formatFileSize(file.getSize()),
-                "message", "Campaign document uploaded successfully"
-            ));
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS)) // Cache for 24 hours
+                .body(Map.of(
+                    "success", true,
+                    "url", url,
+                    "type", "document",
+                    "fileName", file.getOriginalFilename(),
+                    "fileSize", formatFileSize(file.getSize()),
+                    "message", "Campaign document uploaded successfully"
+                ));
             
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid document upload attempt: {}", e.getMessage());
@@ -129,14 +143,16 @@ public class UploadController {
             
             logger.info("Profile image uploaded successfully: {}", url);
             
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "url", url,
-                "type", "profile-image",
-                "fileName", file.getOriginalFilename(),
-                "fileSize", formatFileSize(file.getSize()),
-                "message", "Profile image uploaded successfully"
-            ));
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS)) // Cache for 24 hours
+                .body(Map.of(
+                    "success", true,
+                    "url", url,
+                    "type", "profile-image",
+                    "fileName", file.getOriginalFilename(),
+                    "fileSize", formatFileSize(file.getSize()),
+                    "message", "Profile image uploaded successfully"
+                ));
             
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid profile image upload attempt: {}", e.getMessage());
@@ -172,13 +188,15 @@ public class UploadController {
             
             logger.info("File uploaded successfully: {}", url);
             
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "url", url,
-                "fileName", file.getOriginalFilename(),
-                "fileSize", formatFileSize(file.getSize()),
-                "message", "File uploaded successfully"
-            ));
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS)) // Cache for 24 hours
+                .body(Map.of(
+                    "success", true,
+                    "url", url,
+                    "fileName", file.getOriginalFilename(),
+                    "fileSize", formatFileSize(file.getSize()),
+                    "message", "File uploaded successfully"
+                ));
             
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid file upload attempt: {}", e.getMessage());
@@ -233,33 +251,81 @@ public class UploadController {
     }
 
     /**
-     * Get optimized image URL
+     * Get optimized image URL - WITH CACHING AND RATE LIMITING
      */
     @GetMapping("/optimize")
+    @Cacheable(value = "imageOptimization", key = "#originalUrl + '_' + #width + '_' + #height + '_' + #crop")
     public ResponseEntity<?> getOptimizedImageUrl(
             @RequestParam("url") String originalUrl,
             @RequestParam(defaultValue = "800") int width,
             @RequestParam(defaultValue = "600") int height,
-            @RequestParam(defaultValue = "fill") String crop) {
+            @RequestParam(defaultValue = "fill") String crop,
+            @RequestHeader(value = "X-Forwarded-For", defaultValue = "unknown") String clientIp) {
+        
         try {
+            // Rate limiting
+            if (!isRateLimitOk(clientIp)) {
+                logger.warn("Rate limit exceeded for client: {} requesting optimization for: {}", clientIp, originalUrl);
+                return ResponseEntity.status(429)
+                    .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES))
+                    .body(Map.of(
+                        "success", false,
+                        "error", "Rate limit exceeded. Please slow down your requests.",
+                        "originalUrl", originalUrl,
+                        "optimizedUrl", originalUrl // Return original as fallback
+                    ));
+            }
+
+            // Increment request count
+            incrementRequestCount(clientIp);
+            
+            logger.debug("Optimizing image: {} ({}x{}, crop: {}) for client: {}", 
+                        originalUrl, width, height, crop, clientIp);
+            
             String optimizedUrl = cloudinaryService.getOptimizedImageUrl(originalUrl, width, height, crop);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "originalUrl", originalUrl,
-                "optimizedUrl", optimizedUrl,
-                "transformations", Map.of(
-                    "width", width,
-                    "height", height,
-                    "crop", crop
-                )
-            ));
+            
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS)) // Cache for 24 hours
+                .body(Map.of(
+                    "success", true,
+                    "originalUrl", originalUrl,
+                    "optimizedUrl", optimizedUrl,
+                    "transformations", Map.of(
+                        "width", width,
+                        "height", height,
+                        "crop", crop
+                    )
+                ));
         } catch (Exception e) {
             logger.error("Error generating optimized URL", e);
-            return ResponseEntity.status(500).body(Map.of(
-                "success", false,
-                "error", "Failed to generate optimized URL: " + e.getMessage()
-            ));
+            return ResponseEntity.status(500)
+                .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES))
+                .body(Map.of(
+                    "success", false,
+                    "error", "Failed to generate optimized URL: " + e.getMessage(),
+                    "originalUrl", originalUrl,
+                    "optimizedUrl", originalUrl // Return original as fallback
+                ));
         }
+    }
+
+    /**
+     * Simple rate limiting implementation
+     */
+    private boolean isRateLimitOk(String clientKey) {
+        long currentTime = System.currentTimeMillis();
+        AtomicLong requestCount = clientRequestCounts.computeIfAbsent(clientKey, k -> new AtomicLong(0));
+        
+        // Simple sliding window: reset counter every minute
+        if (currentTime % RATE_LIMIT_WINDOW_MS < 1000) {
+            requestCount.set(0);
+        }
+        
+        return requestCount.get() < MAX_REQUESTS_PER_WINDOW;
+    }
+
+    private void incrementRequestCount(String clientKey) {
+        clientRequestCounts.computeIfAbsent(clientKey, k -> new AtomicLong(0)).incrementAndGet();
     }
 
     /**
