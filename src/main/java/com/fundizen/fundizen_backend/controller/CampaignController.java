@@ -15,7 +15,12 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/campaigns")
-@CrossOrigin // Simple CORS - allows all origins
+@CrossOrigin(
+    origins = {"http://localhost:3000", "http://127.0.0.1:3000", "https://fundizen.my"},
+    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+    allowedHeaders = "*",
+    allowCredentials = "true"
+)
 public class CampaignController {
 
     @Autowired
@@ -34,10 +39,17 @@ public class CampaignController {
             }
             
             Campaign createdCampaign = campaignService.createCampaign(campaign);
-            return ResponseEntity.ok(createdCampaign);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Campaign created successfully",
+                "campaign", createdCampaign
+            ));
             
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error creating campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error creating campaign: " + e.getMessage()
+            ));
         }
     }
 
@@ -80,11 +92,17 @@ public class CampaignController {
         try {
             Campaign campaign = campaignService.getCampaignById(id);
             if (campaign == null) {
-                return ResponseEntity.status(404).body("Campaign not found");
+                return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "error", "Campaign not found"
+                ));
             }
             return ResponseEntity.ok(campaign);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error fetching campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error fetching campaign: " + e.getMessage()
+            ));
         }
     }
 
@@ -93,11 +111,21 @@ public class CampaignController {
     public ResponseEntity<?> verifyCampaign(@PathVariable String id) {
         try {
             Campaign campaign = campaignService.verifyCampaign(id);
-            return ResponseEntity.ok(campaign);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Campaign verified successfully",
+                "campaign", campaign
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("Campaign not found");
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false,
+                "error", "Campaign not found"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error verifying campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error verifying campaign: " + e.getMessage()
+            ));
         }
     }
 
@@ -106,11 +134,21 @@ public class CampaignController {
     public ResponseEntity<?> rejectCampaign(@PathVariable String id) {
         try {
             Campaign campaign = campaignService.rejectCampaign(id);
-            return ResponseEntity.ok(campaign);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Campaign rejected",
+                "campaign", campaign
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("Campaign not found");
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false,
+                "error", "Campaign not found"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error rejecting campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error rejecting campaign: " + e.getMessage()
+            ));
         }
     }
 
@@ -138,11 +176,21 @@ public class CampaignController {
 
             Campaign updatedCampaign = campaignService.updateCampaign(id, campaign);
             if (updatedCampaign == null) {
-                return ResponseEntity.status(404).body("Campaign not found");
+                return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "error", "Campaign not found"
+                ));
             }
-            return ResponseEntity.ok(updatedCampaign);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Campaign updated successfully",
+                "campaign", updatedCampaign
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error updating campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error updating campaign: " + e.getMessage()
+            ));
         }
     }
 
@@ -152,11 +200,20 @@ public class CampaignController {
         try {
             boolean deleted = campaignService.deleteCampaign(id);
             if (!deleted) {
-                return ResponseEntity.status(404).body("Campaign not found");
+                return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "error", "Campaign not found"
+                ));
             }
-            return ResponseEntity.ok("Campaign deleted successfully");
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Campaign deleted successfully"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error deleting campaign: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Error deleting campaign: " + e.getMessage()
+            ));
         }
     }
 }
