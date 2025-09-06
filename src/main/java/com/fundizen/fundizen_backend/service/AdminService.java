@@ -34,9 +34,6 @@ public class AdminService {
     @Autowired
     private UserService userService;
 
-    @Autowired
-    private AdminAnalyticsService adminAnalyticsService;
-
     // ===== CAMPAIGN MANAGEMENT =====
 
     /**
@@ -240,7 +237,7 @@ public class AdminService {
     // ===== SYSTEM MONITORING =====
 
     /**
-     * Get comprehensive system health metrics
+     * Get basic system health metrics
      */
     public Map<String, Object> getSystemHealth() {
         logger.info("Generating system health metrics");
@@ -262,7 +259,7 @@ public class AdminService {
             
             // System load indicators
             boolean databaseHealthy = totalUsers >= 0 && totalCampaigns >= 0;
-            boolean systemResponsive = true; // You can add more complex health checks
+            boolean systemResponsive = true;
             
             // Pending work queue
             long pendingApprovals = campaignRepository.findByStatusOrderByCreatedAtDesc("pending").size();
@@ -410,56 +407,66 @@ public class AdminService {
     }
 
     /**
-     * Generate comprehensive admin report - delegates to analytics service
+     * Get basic system statistics
      */
-    public Map<String, Object> generateComprehensiveReport() {
-        logger.info("Generating comprehensive admin report");
-        return adminAnalyticsService.generateComprehensiveReport();
-    }
+    public Map<String, Object> getBasicStatistics() {
+        logger.info("Fetching basic system statistics");
+        
+        try {
+            List<Campaign> allCampaigns = campaignRepository.findAll();
+            List<User> allUsers = userRepository.findAll();
+            
+            // Campaign statistics
+            Map<String, Long> campaignsByStatus = allCampaigns.stream()
+                .collect(Collectors.groupingBy(Campaign::getStatus, Collectors.counting()));
+            
+            Map<String, Long> campaignsByCategory = allCampaigns.stream()
+                .collect(Collectors.groupingBy(Campaign::getCategory, Collectors.counting()));
+            
+            // User statistics
+            Map<String, Long> usersByRole = allUsers.stream()
+                .collect(Collectors.groupingBy(User::getRole, Collectors.counting()));
+            
+            long verifiedUsers = allUsers.stream().filter(User::isVerified).count();
+            long unverifiedUsers = allUsers.size() - verifiedUsers;
+            
+            // Financial stats
+            double totalGoalAmount = allCampaigns.stream()
+                .mapToDouble(Campaign::getGoalAmount)
+                .sum();
+            
+            double totalRaisedAmount = allCampaigns.stream()
+                .mapToDouble(Campaign::getRaisedAmount)
+                .sum();
 
-    /**
-     * Export platform data for backup or analysis - delegates to analytics service
-     */
-    public Map<String, Object> exportPlatformData(String format, LocalDateTime startDate, LocalDateTime endDate) {
-        logger.info("Exporting platform data in format: {} for period: {} to {}", format, startDate, endDate);
-        return adminAnalyticsService.exportPlatformData(format, startDate, endDate);
-    }
-
-    // ===== DELEGATION METHODS TO ANALYTICS SERVICE =====
-
-    /**
-     * Get campaign analytics - delegates to analytics service
-     */
-    public Map<String, Object> getCampaignAnalytics() {
-        return adminAnalyticsService.getCampaignAnalytics();
-    }
-
-    /**
-     * Get user analytics - delegates to analytics service
-     */
-    public Map<String, Object> getUserAnalytics() {
-        return adminAnalyticsService.getUserAnalytics();
-    }
-
-    /**
-     * Get top performing campaigns - delegates to analytics service
-     */
-    public List<Map<String, Object>> getTopPerformingCampaigns(int limit) {
-        return adminAnalyticsService.getTopPerformingCampaigns(limit);
-    }
-
-    /**
-     * Get most active users - delegates to analytics service
-     */
-    public List<Map<String, Object>> getMostActiveUsers(int limit) {
-        return adminAnalyticsService.getMostActiveUsers(limit);
-    }
-
-    /**
-     * Get platform activity report - delegates to analytics service
-     */
-    public Map<String, Object> getPlatformActivityReport(int days) {
-        return adminAnalyticsService.getPlatformActivityReport(days);
+            return Map.of(
+                "overview", Map.of(
+                    "totalCampaigns", allCampaigns.size(),
+                    "totalUsers", allUsers.size(),
+                    "totalGoalAmount", totalGoalAmount,
+                    "totalRaisedAmount", totalRaisedAmount,
+                    "platformEfficiency", totalGoalAmount > 0 ? (totalRaisedAmount / totalGoalAmount) * 100 : 0
+                ),
+                "campaigns", Map.of(
+                    "byStatus", campaignsByStatus,
+                    "byCategory", campaignsByCategory
+                ),
+                "users", Map.of(
+                    "byRole", usersByRole,
+                    "verified", verifiedUsers,
+                    "unverified", unverifiedUsers
+                ),
+                "timestamp", LocalDateTime.now()
+            );
+            
+        } catch (Exception e) {
+            logger.error("Error fetching basic statistics", e);
+            return Map.of(
+                "error", "Failed to fetch statistics",
+                "message", e.getMessage(),
+                "timestamp", LocalDateTime.now()
+            );
+        }
     }
 
     // ===== PRIVATE HELPER METHODS =====
