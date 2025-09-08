@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -318,17 +319,20 @@ public class DonationController {
             int end = Math.min(start + size, donations.size());
             List<Donation> paginatedDonations = donations.subList(start, end);
 
+            // FIXED: Proper type declaration and lambda return type
             List<Map<String, Object>> donationsWithMessages = paginatedDonations.stream()
-                .map(donation -> Map.of(
-                    "id", donation.getId(),
-                    "donorName", donation.getDisplayName(),
-                    "amount", donation.getAmount(),
-                    "currency", donation.getCurrency(),
-                    "message", donation.getMessage() != null ? donation.getMessage() : "",
-                    "createdAt", donation.getCreatedAt(),
-                    "isAnonymous", donation.isAnonymous(),
-                    "timeAgo", calculateTimeAgo(donation.getCreatedAt())
-                ))
+                .map(donation -> {
+                    Map<String, Object> donationMap = new HashMap<>();
+                    donationMap.put("id", donation.getId());
+                    donationMap.put("donorName", donation.getDisplayName());
+                    donationMap.put("amount", donation.getAmount());
+                    donationMap.put("currency", donation.getCurrency());
+                    donationMap.put("message", donation.getMessage() != null ? donation.getMessage() : "");
+                    donationMap.put("createdAt", donation.getCreatedAt());
+                    donationMap.put("isAnonymous", donation.isAnonymous());
+                    donationMap.put("timeAgo", calculateTimeAgo(donation.getCreatedAt()));
+                    return donationMap;
+                })
                 .collect(Collectors.toList());
 
             Map<String, Object> response = Map.of(
@@ -462,15 +466,17 @@ public class DonationController {
                 donationService.getTopDonors(campaignId, limit);
 
             List<Map<String, Object>> donorList = topDonors.stream()
-                .map(donor -> Map.of(
-                    "donorId", donor.getDonorId(),
-                    "displayName", donor.getDisplayName(),
-                    "totalAmount", donor.getTotalAmount(),
-                    "donationCount", donor.getDonationCount(),
-                    "averageDonation", donor.getDonationCount() > 0 ? 
-                        donor.getTotalAmount() / donor.getDonationCount() : 0.0
-                ))
-                .collect(Collectors.toList());
+            .map(donor -> {
+                Map<String, Object> donorMap = new HashMap<>();
+                donorMap.put("donorId", donor.getDonorId());
+                donorMap.put("displayName", donor.getDisplayName());
+                donorMap.put("totalAmount", donor.getTotalAmount());
+                donorMap.put("donationCount", donor.getDonationCount());
+                donorMap.put("averageDonation", donor.getDonationCount() > 0 ? 
+                    donor.getTotalAmount() / donor.getDonationCount() : 0.0);
+                return donorMap;
+            })
+            .collect(Collectors.toList());
 
             Map<String, Object> response = Map.of(
                 "success", true,
@@ -504,16 +510,18 @@ public class DonationController {
                 donationService.getMonthlyDonationTrends(months);
 
             List<Map<String, Object>> trendData = trends.stream()
-                .map(trend -> Map.of(
-                    "year", trend.getYear(),
-                    "month", trend.getMonth(),
-                    "totalAmount", trend.getTotalAmount(),
-                    "donationCount", trend.getDonationCount(),
-                    "averageAmount", trend.getDonationCount() > 0 ? 
-                        trend.getTotalAmount() / trend.getDonationCount() : 0.0,
-                    "monthName", getMonthName(trend.getMonth())
-                ))
-                .collect(Collectors.toList());
+            .map(trend -> {
+                Map<String, Object> trendMap = new HashMap<>();
+                trendMap.put("year", trend.getYear());
+                trendMap.put("month", trend.getMonth());
+                trendMap.put("totalAmount", trend.getTotalAmount());
+                trendMap.put("donationCount", trend.getDonationCount());
+                trendMap.put("averageAmount", trend.getDonationCount() > 0 ? 
+                    trend.getTotalAmount() / trend.getDonationCount() : 0.0);
+                trendMap.put("monthName", getMonthName(trend.getMonth()));
+                return trendMap;
+            })
+            .collect(Collectors.toList());
 
             Map<String, Object> response = Map.of(
                 "success", true,
@@ -680,89 +688,97 @@ public class DonationController {
     }
 
     /**
-     * Convert donation to user format (for donor's donation history)
-     */
-    private Map<String, Object> convertDonationToUserFormat(Donation donation) {
-        return Map.of(
-            "id", donation.getId(),
-            "campaignId", donation.getCampaignId(),
-            "amount", donation.getAmount(),
-            "currency", donation.getCurrency(),
-            "status", donation.getPaymentStatus(),
-            "message", donation.getMessage() != null ? donation.getMessage() : "",
-            "createdAt", donation.getCreatedAt(),
-            "completedAt", donation.getCompletedAt(),
-            "isRefunded", donation.isRefunded(),
-            "refundReason", donation.getRefundReason(),
-            "canRefund", donation.canBeRefunded()
-        );
-    }
+ * Convert donation to user format (for donor's donation history)
+ */
+private Map<String, Object> convertDonationToUserFormat(Donation donation) {
+    Map<String, Object> userMap = new HashMap<>();
+    userMap.put("id", donation.getId());
+    userMap.put("campaignId", donation.getCampaignId());
+    userMap.put("amount", donation.getAmount());
+    userMap.put("currency", donation.getCurrency());
+    userMap.put("status", donation.getPaymentStatus());
+    userMap.put("message", donation.getMessage() != null ? donation.getMessage() : "");
+    userMap.put("createdAt", donation.getCreatedAt());
+    userMap.put("completedAt", donation.getCompletedAt());
+    userMap.put("isRefunded", donation.isRefunded());
+    userMap.put("refundReason", donation.getRefundReason());
+    userMap.put("canRefund", donation.canBeRefunded());
+    return userMap; 
+}
 
     /**
      * Convert donation to admin format (full details for admin panel)
      */
     private Map<String, Object> convertDonationToAdminFormat(Donation donation) {
-        return Map.of(
-            "id", donation.getId(),
-            "campaignId", donation.getCampaignId(),
-            "donorId", donation.getDonorId(),
-            "donorName", donation.getDonorName(),
-            "donorEmail", donation.getDonorEmail(),
-            "amount", donation.getAmount(),
-            "currency", donation.getCurrency(),
-            "status", donation.getPaymentStatus(),
-            "stripePaymentIntentId", donation.getStripePaymentIntentId(),
-            "stripeChargeId", donation.getStripeChargeId(),
-            "stripeFee", donation.getStripeFee(),
-            "platformFee", donation.getPlatformFee(),
-            "netAmount", donation.getNetAmount(),
-            "createdAt", donation.getCreatedAt(),
-            "completedAt", donation.getCompletedAt(),
-            "isRefunded", donation.isRefunded(),
-            "refundReason", donation.getRefundReason(),
-            "refundId", donation.getRefundId(),
-            "donorIpAddress", donation.getDonorIpAddress(),
-            "donorCountry", donation.getDonorCountry(),
-            "isAnonymous", donation.isAnonymous(),
-            "receiveUpdates", donation.isReceiveUpdates(),
-            "message", donation.getMessage(),
-            "timeAgo", calculateTimeAgo(donation.getCreatedAt())
-        );
+        Map<String, Object> adminMap = new HashMap<>();
+        adminMap.put("id", donation.getId());
+        adminMap.put("campaignId", donation.getCampaignId());
+        adminMap.put("donorId", donation.getDonorId());
+        adminMap.put("donorName", donation.getDonorName());
+        adminMap.put("donorEmail", donation.getDonorEmail());
+        adminMap.put("amount", donation.getAmount());
+        adminMap.put("currency", donation.getCurrency());
+        adminMap.put("status", donation.getPaymentStatus());
+        adminMap.put("stripePaymentIntentId", donation.getStripePaymentIntentId());
+        adminMap.put("stripeChargeId", donation.getStripeChargeId());
+        adminMap.put("stripeFee", donation.getStripeFee());
+        adminMap.put("platformFee", donation.getPlatformFee());
+        adminMap.put("netAmount", donation.getNetAmount());
+        adminMap.put("createdAt", donation.getCreatedAt());
+        adminMap.put("completedAt", donation.getCompletedAt());
+        adminMap.put("isRefunded", donation.isRefunded());
+        adminMap.put("refundReason", donation.getRefundReason());
+        adminMap.put("refundId", donation.getRefundId());
+        adminMap.put("donorIpAddress", donation.getDonorIpAddress());
+        adminMap.put("donorCountry", donation.getDonorCountry());
+        adminMap.put("isAnonymous", donation.isAnonymous());
+        adminMap.put("receiveUpdates", donation.isReceiveUpdates());
+        adminMap.put("message", donation.getMessage());
+        adminMap.put("timeAgo", calculateTimeAgo(donation.getCreatedAt()));
+        return adminMap;
     }
+
 
     /**
      * Convert donation to detailed format (single donation view)
      */
     private Map<String, Object> convertDonationToDetailedFormat(Donation donation) {
-        return Map.of(
-            "id", donation.getId(),
-            "campaignId", donation.getCampaignId(),
-            "donorName", donation.getDisplayName(),
-            "amount", donation.getAmount(),
-            "currency", donation.getCurrency(),
-            "status", donation.getPaymentStatus(),
-            "message", donation.getMessage() != null ? donation.getMessage() : "",
-            "createdAt", donation.getCreatedAt(),
-            "completedAt", donation.getCompletedAt(),
-            "isAnonymous", donation.isAnonymous(),
-            "isRefunded", donation.isRefunded(),
-            "refundReason", donation.getRefundReason(),
-            "receiveUpdates", donation.isReceiveUpdates(),
-            "fees", Map.of(
-                "stripeFee", donation.getStripeFee() != null ? donation.getStripeFee() : 0.0,
-                "platformFee", donation.getPlatformFee() != null ? donation.getPlatformFee() : 0.0,
-                "netAmount", donation.getNetAmount() != null ? donation.getNetAmount() : donation.getAmount()
-            ),
-            "payment", Map.of(
-                "stripePaymentIntentId", donation.getStripePaymentIntentId(),
-                "stripeChargeId", donation.getStripeChargeId(),
-                "canRefund", donation.canBeRefunded()
-            ),
-            "metadata", Map.of(
-                "donorCountry", donation.getDonorCountry(),
-                "timeAgo", calculateTimeAgo(donation.getCreatedAt())
-            )
-        );
+        Map<String, Object> detailedMap = new HashMap<>();
+        detailedMap.put("id", donation.getId());
+        detailedMap.put("campaignId", donation.getCampaignId());
+        detailedMap.put("donorName", donation.getDisplayName());
+        detailedMap.put("amount", donation.getAmount());
+        detailedMap.put("currency", donation.getCurrency());
+        detailedMap.put("status", donation.getPaymentStatus());
+        detailedMap.put("message", donation.getMessage() != null ? donation.getMessage() : "");
+        detailedMap.put("createdAt", donation.getCreatedAt());
+        detailedMap.put("completedAt", donation.getCompletedAt());
+        detailedMap.put("isAnonymous", donation.isAnonymous());
+        detailedMap.put("isRefunded", donation.isRefunded());
+        detailedMap.put("refundReason", donation.getRefundReason());
+        detailedMap.put("receiveUpdates", donation.isReceiveUpdates());
+        
+        // Fees sub-map
+        Map<String, Object> feesMap = new HashMap<>();
+        feesMap.put("stripeFee", donation.getStripeFee() != null ? donation.getStripeFee() : 0.0);
+        feesMap.put("platformFee", donation.getPlatformFee() != null ? donation.getPlatformFee() : 0.0);
+        feesMap.put("netAmount", donation.getNetAmount() != null ? donation.getNetAmount() : donation.getAmount());
+        detailedMap.put("fees", feesMap);
+        
+        // Payment sub-map
+        Map<String, Object> paymentMap = new HashMap<>();
+        paymentMap.put("stripePaymentIntentId", donation.getStripePaymentIntentId());
+        paymentMap.put("stripeChargeId", donation.getStripeChargeId());
+        paymentMap.put("canRefund", donation.canBeRefunded());
+        detailedMap.put("payment", paymentMap);
+        
+        // Metadata sub-map
+        Map<String, Object> metadataMap = new HashMap<>();
+        metadataMap.put("donorCountry", donation.getDonorCountry());
+        metadataMap.put("timeAgo", calculateTimeAgo(donation.getCreatedAt()));
+        detailedMap.put("metadata", metadataMap);
+        
+        return detailedMap;
     }
 
     /**

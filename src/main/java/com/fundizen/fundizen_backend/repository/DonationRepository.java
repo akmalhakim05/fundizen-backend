@@ -26,6 +26,10 @@ public interface DonationRepository extends MongoRepository<Donation, String> {
     List<Donation> findByCampaignIdAndPaymentStatus(String campaignId, String status);
     List<Donation> findByDonorIdAndPaymentStatus(String donorId, String status);
     
+    // FIXED: Added missing Pageable parameter methods
+    Page<Donation> findByCampaignIdAndPaymentStatus(String campaignId, String status, Pageable pageable);
+    Page<Donation> findByDonorIdAndPaymentStatus(String donorId, String status, Pageable pageable);
+    
     // Successful donations only
     List<Donation> findByCampaignIdAndPaymentStatusOrderByCreatedAtDesc(String campaignId, String status);
     List<Donation> findByDonorIdAndPaymentStatusOrderByCreatedAtDesc(String donorId, String status);

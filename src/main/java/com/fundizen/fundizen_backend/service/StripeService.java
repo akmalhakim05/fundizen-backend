@@ -6,6 +6,7 @@ import com.stripe.model.*;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.*;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.net.Webhook;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;
